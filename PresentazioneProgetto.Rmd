@@ -1,0 +1,466 @@
+---
+title: "Progetto Fondamenti di Scienza dei Dati"
+author: "Aleksa Aleksic"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+nobel = read_csv("nobel_latest.csv",show_col_types = FALSE)
+invst = read_csv("invstTotale.csv",show_col_types = FALSE)
+
+```
+
+```{css, echo=FALSE}
+slides > slide{
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  background:white;
+}
+
+
+h2{
+    font-size: 35px;
+    line-height: 65px;
+    letter-spacing: -2px;
+    position: relative;
+    color: #797979;
+    left: -60px;
+    background-color: #f9f9f9;
+    padding: 8px;
+    width: 112.5%;
+    border-left: 5px solid #ccc;
+}
+```
+
+## Come nasce il progetto
+
+Il progetto riguardo al premio Nobel nasce per:
+
+-   curiosità personale
+-   interesse personale
+
+Ragioni che hanno portato alla fomulazione delle seguenti domande:
+
+-   Quale paese ha vinto più premi nobel?
+-   Quanti ne ha vinti nel secolo corrente?
+-   Quanto ha speso tale paese in ricerca scientifica?
+-   Si può trovare una correlazione?
+-   Si può predirre il prossimo numero di vincitori?
+
+## Dataset utilizzati
+
+Per sviluppare il progetto sono stati utilizzati i seguenti dataset:
+
+-   <a href="https://www.kaggle.com/datasets/prithusharma1/all-nobel-laureates-1901-present"> Vincitori Nobel</a>
+-   <a href="https://data.oecd.org/rd/gross-domestic-spending-on-r-d.htm"> Totale speso in ricerca e sviluppo per paese </a>
+
+Prelevati dalle seguenti fonti:
+
+-   Kaggle
+-   OECD (Organisation for Economic Co-operation and Development)
+
+## Quale paese ha vinto più premi Nobel?
+
+Osserviamo il numero di vincitori di dieci paesi scelti tra Europa e non.
+
+```{r  figures-side,fig.align='center'}
+
+#italia
+nobelItalia = 
+  nobel %>% 
+  filter(Birth_Country=="Italy")%>%
+  select(Birth_Country)
+it = as.integer(count(nobelItalia))
+
+#francia
+nobelFrancia = 
+  nobel %>% 
+  filter(Birth_Country=="France")%>%
+  select(Birth_Country)
+fr = as.integer(count(nobelFrancia))
+
+#germania
+nobelGermania = 
+  nobel %>% 
+  filter(Birth_Country=="Germany")%>%
+  select(Birth_Country)
+ger = as.integer(count(nobelGermania))
+
+#svizzera
+nobelSvizzera = 
+  nobel %>% 
+  filter(Birth_Country=="Switzerland")%>%
+  select(Birth_Country)
+swi = as.integer(count(nobelSvizzera))
+
+#svezia
+nobelSvezia = 
+  nobel %>% 
+  filter(Birth_Country=="Sweden")%>%
+  select(Birth_Country)
+swe = as.integer(count(nobelSvezia))
+
+#russia
+nobelRussia = 
+  nobel %>% 
+  filter(Birth_Country=="Russia")%>%
+  select(Birth_Country)
+ru = as.integer(count(nobelRussia))
+
+#Stati Uniti
+nobelus = 
+  nobel %>% 
+  filter(Birth_Country=="USA")%>%
+  select(Birth_Country)
+us = as.integer(count(nobelus))
+
+#Giappone
+nobelgp = 
+  nobel %>% 
+  filter(Birth_Country=="Japan")%>%
+  select(Birth_Country)
+gp = as.integer(count(nobelgp))
+
+#Norvegia
+nobelnw = 
+  nobel %>% 
+  filter(Birth_Country=="Norway")%>%
+  select(Birth_Country)
+nw = as.integer(count(nobelnw))
+
+#Danimarca
+nobeldk = 
+  nobel %>% 
+  filter(Birth_Country=="Denmark")%>%
+  select(Birth_Country)
+dk = as.integer(count(nobeldk))
+
+Country = c("IT","FR","GE","SV","SWE","RU","US","JP","NW","DK")
+
+Nobels = c(it,fr,swi,swe,ger,ru,us,gp,nw,dk)
+
+NobelPerNazione = data.frame(Country=Country,Nobels = Nobels)
+
+nobelgraph <- barplot( height = NobelPerNazione$Nobels, border = F,main="Numero di Nobel per paese", 
+                     names.arg=Country,
+                     ylab="Nobels",xlab="Paese",
+                     col= c("black","black","black","black","black","black","gold","black","grey","grey"))
+
+legend("topright", legend = c("Maggior numero", "Minor numero"), 
+       col = c("gold", "grey"), 
+       bty = "n", pch=20 , pt.cex = 2, cex = 0.8, horiz = FALSE, inset = c(0.05, 0.05))
+
+text(nobelgraph, ifelse(Country == "US", Nobels-9, Nobels+9), paste( Nobels))
+
+```
+
+Consideriamo quindi gli <b>Stati Uniti </b>, in quali categorie hanno ottenuto il maggior numero di successi?
+
+```{r categorie,fig.align='center'}
+nobelUSA = 
+  nobel %>% 
+  filter(Birth_Country=="USA") %>%
+  select(Category)
+
+topic <-data.frame(table(nobelUSA))
+
+catpie <- pie(topic$Freq,labels = c("57","53","10","79","19","71"),main="Categorie di vincita dei Nobel (USA)",               sub="*I numeri indicano il numero di vincite per categoria")
+
+legend("topright", legend = c("Chimica","Economia","Letteratura","Medicina","Pace","Fisica"), 
+       fill = c("white","lightblue","#FFE4E1","#E0FFFF","#D8BFD8","#FFFACD"),border="black",
+       bty = "n", pt.cex = 2,  horiz = FALSE)
+
+```
+
+
+## Uno sguardo più da vicino
+
+Ristringiamo ora il campo al periodo <b>2000-2021</b> e diamo un occhio più da vicino sia alle vincite
+che alle categorie di vincita.
+
+```{r occhio di falco,fig.align='center'}
+nbl = 
+  nobel%>%
+  filter( (between(Year,2000,2021)) & (Birth_Country=="USA")) %>%
+  select(Year)
+
+conteggio <- count(nbl,Year)
+
+numVincitori <- data.frame(conteggio)
+
+barplot(numVincitori$n, border = F,main="Numero di Nobel USA negli ultimi 21 anni", las = 2,
+        names.arg = numVincitori$Year,
+         ylab="Nobel vinti",xlab="anno")
+```
+
+Osserviamo quindi anche le <b>categorie</b> più da vicino
+
+```{r occhio di falco categoria,fig.align='center'}
+catRistretta = 
+  nobel %>% 
+  filter((Birth_Country=="USA") & (between(Year,2000,2021))) %>%
+  select(Category)
+
+topic <- data.frame(table(catRistretta))
+
+catpie <- pie(topic$Freq,labels = c("22","31","2","22","3","20"),main="Categorie di vincita nel periodo 2000-2021",  sub="*I numeri indicano il numero di vincite per categoria")
+
+legend("topright", legend = c("Chimica","Economia","Letteratura","Medicina","Pace","Fisica"), 
+       fill = c("white","lightblue","#FFE4E1","#E0FFFF","#D8BFD8","#FFFACD"),border="black",
+       bty = "n", pt.cex = 2,  horiz = FALSE)
+
+```
+
+## Quanto ha speso tale paese in ricerca scientifica?
+Cerchiamo ora di trovare una ragione dietro a tutte queste vincite. 
+Osserviamo la spesa in ricerca e sviluppo negli ultimi 21 anni. 
+
+```{r spesa paesi, echo=FALSE,out.height="370px", out.width="600px", fig.align='center'}
+
+invstUs = 
+  invst %>%
+  filter((LOCATION =="USA") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+
+iUs = sum(invstUs[,2])
+
+invstIt = 
+  invst %>%
+  filter((LOCATION =="ITA") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iIt = sum(invstIt[,2])
+
+invstSwe = 
+  invst %>%
+  filter((LOCATION =="SWE") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iSw = sum(invstSwe[,2])
+
+invstJp = 
+  invst %>%
+  filter ((LOCATION =="JPN") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iJp = sum(invstJp[,2])
+
+invstDk = 
+  invst %>%
+  filter( (LOCATION =="DNK")  & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+
+iDk = sum(invstDk[,2])
+
+invstFr = 
+  invst %>%
+  filter( (LOCATION =="FRA") &  (between(TIME,2000,2021)))%>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iFr = sum(invstFr[,2])
+
+invstGe = 
+  invst %>%
+  filter((LOCATION =="DEU") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iGe = sum(invstGe[,2])
+
+invstSv = 
+  invst %>%
+  filter ( (LOCATION =="SVN") & (between(TIME,2000,2021)))%>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iSv = sum(invstSv[,2])
+
+invstRu = 
+  invst %>%
+  filter((LOCATION =="RUS") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iRu = sum(invstRu[,2])
+
+invstNw = 
+  invst %>%
+  filter((LOCATION =="NOR") & (between(TIME,2000,2021))) %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+iNw = sum(invstNw[,2])
+
+
+Ctr = c("IT","FR","GE","SW","RU","US","JP","NW","DK")
+
+
+#mentre un altro vettore conterrà il numero di nobel vinti da ogni paese
+Spesa = c(iIt,iFr,iGe,iSw,iRu,iUs,iJp,iNw,iDk)
+
+spesameglio <- round(Spesa,0)
+
+spesagraph <- barplot( height = spesameglio, horiz = TRUE,border = F,main="Totale spesa in ricerca negli ultimi 21 anni (2000-2021)", 
+                       names.arg=Ctr, cex.names = 0.7,
+                       xlab="Spesa (in miliardi di $)",ylab="Paese",
+                       col= c("black","black","black","black"))
+
+```
+
+
+Osserviamo nuovamente le cose più da vicino per cercare di capire <b>l'evoluzione</b> di tale spesa per gli USA.
+
+```{r tendenza USA, echo=FALSE, fig.align='center'}
+ 
+#lo modifico per scegliere solo le colonne che mi interessano
+invstUs = 
+  invst %>%
+  filter( (LOCATION =="USA") & (between(TIME,2000,2021)))  %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+
+
+#creo il grafico che mostra la tendenza della spesa 
+
+ggplot(invstUs,aes(TIME,Value)) +
+  geom_point(data=invstUs) +
+  geom_smooth(color="gold",formula = y ~ x, method = "loess") + 
+  labs(
+    title = "Spesa totale in ricerca scientifica degli USA ",
+    subtitle = "Il periodo d'interesse va dal 2000 al 2021",
+    x = "Anno",
+    y = "Totale speso (in miliardi di $)",
+  )
+
+```
+
+
+
+## Esiste una correlazione?
+
+Cerchiamo di collegare le due cose provando a trovare una <b>correlazione tra la spesa in ricerca e il numero di premi Nobel vinti</b>. 
+
+```{r correlazione,echo=FALSE,fig.align='center'}
+nnn = 
+  nobel%>%
+  filter((between(Year,1981,2021)) & (Birth_Country=="USA"))%>%
+  select(Year)
+
+invstUs2 = 
+  invst %>%
+  filter(LOCATION =="USA") %>%
+  mutate(Value = Value / 10^3) %>%
+  select(TIME,Value)
+
+invstUtile = subset(invstUs2, TIME!=1999 & TIME!=1991)
+
+conteggio2 <- count(nnn,Year)
+
+correlazione <- data.frame(invstUtile[,2], conteggio2[,])
+
+corrLast <- subset(correlazione, select = -c(Year))
+
+corrLast$Value <- round(corrLast$Value,0)
+
+ggplot(corrLast,aes(Value,n)) +
+  geom_point(data=corrLast) +
+  geom_smooth(color="gold",formula = y ~ x, method = "loess") + 
+  labs(
+    title = "Correlazione tra spesa totale e numero di vincitori del Nobel (USA) ",
+    subtitle = "Il totale speso è relativo a ogni anno dal 1981 al 2021, così anche i vincitori",
+    x = "Totale speso (in miliardi di $)",
+    y = "Numero di vincitori",
+  )
+```
+
+
+## E' possibile predire le prossime vincite? 
+
+Cerchiamo quindi di collegare le cose, sviluppiamo un modello di <b>regressione lineare</b> per capire l'andamento della correlazione tra numero di vincitori e spesa totale: 
+
+Creiamo prima un indice di correlazione. 
+
+```{r indice di correlazione,echo=FALSE}
+#cerco un indice di correlazione(se è positivo va bene)
+cor(corrLast$Value,corrLast$n)
+```
+
+
+```{r lm,results='hide'}
+#creo un modello di regressione lineare
+prova <- lm(n ~ Value, data = corrLast )
+
+summary(prova)
+
+```
+
+Osserviamo anche i <b>coefficienti</b> e il <b> coefficiente di determinazione </b> 
+
+```{r coefficienti, echo=FALSE}
+prova$coefficients
+summary(prova)$r.squared
+
+```
+
+Tale indice è <b>positivo</b>, creiamo allora il modello di regressione lineare
+
+
+```{r regressione lineare, fig.align='center',echo=FALSE,results='hide'}
+#creo un modello di regressione lineare
+prova <- lm(n ~ Value, data = corrLast )
+
+summary(prova)
+
+#creo il grafico di tale modello, vedo che c'è un po' di regressione
+ggplot(corrLast, aes(x = Value, y = n)) + 
+  geom_point() + 
+  labs(
+    title = 'Correlazione tra spesa e numero di vincitori',
+    x = 'Totale speso in miliardi di $',
+    y = 'Numero di vincite',
+    subtitle = 'Con regressione lineare'
+  ) +
+  geom_abline(intercept = prova$coefficients[1], 
+              slope = prova$coefficients[2], 
+              color = "red") 
+
+
+```
+
+
+Possiamo quindi provare a predire. 
+
+
+
+<p style="font-size:13px"> ! Per prendire meglio i risultati utilizziamo tutto il dataset quindi dal 1981 al 2021 </p>
+
+
+## Quanti Nobel per gli USA nel 2022?
+
+Proviamo ora effettivamente a predire il numero di vincite nel 2022. 
+
+Usiamo la funzione: 
+
+```{r echo=TRUE,results='hide'}
+
+predict(object = prova, newdata = subset(corrLast, Value = 703))
+
+```
+
+Otteniamo: 
+
+```{r echo=FALSE}
+
+print(4.69)
+
+```
+
+Arrotondiamo a 5, abbiamo predetto <b>5</b> vincitori per il 2022, quanti sono stati in tutto?
+<b>6</b>, siamo andati molto vicini, possiamo quindi ritenerci sodisfatti. 
+
+Grazie per l'attenzione!
